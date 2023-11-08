@@ -70,11 +70,19 @@ class GPTModel(nn.Module):
         self.layer_norm = nn.LayerNorm(embedding_dim)
         self.lm_head = nn.Linear(embedding_dim, vocab_size, bias=False)
 
-    def forward(self, x):
+    def forward(self, x, targets=None):
         x = self.embedding(x)
         pos = torch.arange(x.size(1), device=x.device).unsqueeze(0)
         x = x + self.pos_embedding(pos)
         x = self.blocks(x)
         x = self.layer_norm(x)
-        x = self.lm_head(x)
-        return x
+        logits = self.lm_head(x)
+
+        if targets is None:
+            loss = None
+        else:
+            logits = logits.view(-1, logits.size(-1))
+            targets = targets.view(-1)
+            loss = F.cross_entropy(logits, targets)
+
+        return logits, loss
