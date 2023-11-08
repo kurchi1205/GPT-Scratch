@@ -1,7 +1,7 @@
 import torch
 from gpt import GPTModel
 from tqdm import tqdm
-from data import get_batch
+from data import get_data, get_batch
 
 
 def get_model(cfg):
@@ -9,7 +9,17 @@ def get_model(cfg):
     return model
 
 
+def get_data(cfg):
+    with open(cfg["data_path"], 'r', encoding='utf-8') as f:
+        text = f.read()
+    train_data, val_data, vocab_size, stoi = get_data(text)
+    cfg["vocab_size"] = vocab_size
+    cfg["stoi"] = stoi
+    return train_data, val_data
+
+
 def train(cfg, learning_rate, max_iters, eval_interval):
+    train_data, val_data = get_data(cfg)
     model = get_model(cfg)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
@@ -20,7 +30,7 @@ def train(cfg, learning_rate, max_iters, eval_interval):
         #     print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
         # sample a batch of data
-        xb, yb = get_batch('train')
+        xb, yb = get_batch(train_data)
 
         # evaluate the loss
         logits, loss = model(xb, yb)
@@ -28,4 +38,3 @@ def train(cfg, learning_rate, max_iters, eval_interval):
         loss.backward()
         optimizer.step()
 
-        
