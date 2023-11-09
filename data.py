@@ -8,6 +8,7 @@ def get_data(raw_text):
     vocab_size = len(chars)
     # create a mapping from characters to integers
     stoi = { ch:i for i,ch in enumerate(chars) }
+    itos = { i:ch for i,ch in enumerate(chars)}
     encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
 
     # Train and test splits
@@ -15,7 +16,7 @@ def get_data(raw_text):
     n = int(0.9*len(data)) # first 90% will be train, rest val
     train_data = data[:n]
     val_data = data[n:]
-    return train_data, val_data, vocab_size, stoi
+    return train_data, val_data, vocab_size, stoi, itos
 
 
 def get_batch(data, block_size, batch_size):
