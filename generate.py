@@ -24,11 +24,13 @@ def generate(model, block_size, itos, idx, max_new_tokens):
     return decoded_tokens
 
 if __name__ == "__main__":
-    model = torch.load("gpt_trained_4.pth")
+    model = torch.load("gpt_trained.pth")
     config = json.load(open("config.json"))
     stoi = config["stoi"]
     text =  "RHYME a a b c b c d e f d f e"
     encode = lambda s: [stoi[c] for c in s]
     encoded_text = torch.tensor(([encode(text)]), dtype=torch.long)
-    generated_text = generate(model, config["block_size"], config["itos"], encoded_text, 10)
+    model = model.to('cpu')
+    encoded_text = encoded_text.to('cpu')
+    generated_text = generate(model, config["block_size"], config["itos"], encoded_text, 1000)
     print(generated_text)

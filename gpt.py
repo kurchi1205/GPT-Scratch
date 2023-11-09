@@ -29,7 +29,7 @@ class Head(nn.Module):
         query = self.query(x)
         key = self.key(x)
         weights = query @ key.transpose(-2,-1) * key.shape[-1]**-0.5
-        mask = torch.tril(torch.ones(x.size(1), x.size(1)))
+        mask = torch.tril(torch.ones(x.size(1), x.size(1))).to(weights.device)
         weights = weights.masked_fill(mask==0, float('-inf'))
         weights = F.softmax(weights, dim=-1)
         weights = self.dropout(weights)

@@ -25,21 +25,24 @@ def train(cfg, learning_rate, max_iters, eval_interval):
     train_data, val_data = get_data_raw(cfg)
     json.dump(cfg, open("config.json", "w"))
     model = get_model(cfg)
-    model.to(DEVICE)
+    model = model.to(DEVICE)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
     for iter in tqdm(range(max_iters)):
         # every once in a while evaluate the loss on train and val sets
-        # if iter % eval_interval == 0 or iter == max_iters - 1:
+        # if iter % cfg["eval_interval"] == 0 or iter == max_iters - 1:
         #     losses = estimate_loss()
         #     print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
-        if iter % cfg["save_interval"] == 0:
+        if iter % cfg["save_interval"] == 0 or iter == max_iters - 1:
             torch.save(model, f"gpt_trained_{iter}.pth")
         # sample a batch of data
         xb, yb = get_batch(train_data, cfg["block_size"], cfg["batch_size"])
         # evaluate the loss
         logits, loss = model(xb, yb)
+        if iter % 1000 == 0:
+            print(f"Training Loss: {loss} at iter {iter}")
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
+    torch.save(model, f"gpt_trained.pth")
 
