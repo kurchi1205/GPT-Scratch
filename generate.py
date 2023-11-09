@@ -9,7 +9,8 @@ def generate(model, block_size, itos, idx, max_new_tokens):
         # crop idx to the last block_size tokens
         idx_cond = idx[:, -block_size:]
         # get the predictions
-        logits, loss = model(idx_cond)
+        with torch.no_grad():
+            logits, loss = model(idx_cond)
         # focus only on the last time step
         logits = logits[:, -1, :] # becomes (B, C)
         # apply softmax to get probabilities
