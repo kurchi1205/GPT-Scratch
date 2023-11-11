@@ -24,13 +24,13 @@ def generate(model, block_size, itos, idx, max_new_tokens):
     return decoded_tokens
 
 if __name__ == "__main__":
-    model = torch.load("gpt_trained.pth")
+    model = torch.load("models/gpt_trained_12000.pth")
     config = json.load(open("config.json"))
     stoi = config["stoi"]
-    text =  "RHYME a a b c b c d e f d f e"
+    text =  "Generate Docker File Code: FROM python:3"
     encode = lambda s: [stoi[c] for c in s]
     encoded_text = torch.tensor(([encode(text)]), dtype=torch.long)
     model = model.to('cpu')
     encoded_text = encoded_text.to('cpu')
-    generated_text = generate(model, config["block_size"], config["itos"], encoded_text, 1000)
+    generated_text = generate(model, config["block_size"], config["itos"], encoded_text, 500)
     print(generated_text)

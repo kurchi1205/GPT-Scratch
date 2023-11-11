@@ -2,7 +2,7 @@ from train import train
 
 if __name__ == "__main__":
     config = {
-        "data_path": "datasets/train_data.txt",
+        "data_path": "datasets/train_data_code.txt",
         "vocab_size": None,
         "stoi": None,
         "embedding_dim": 384,

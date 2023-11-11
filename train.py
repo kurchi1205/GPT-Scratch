@@ -23,6 +23,7 @@ def get_data_raw(cfg):
 
 
 def train(cfg, learning_rate, max_iters, eval_interval):
+    wandb.init(config=cfg, project="GPT-Training")
     train_data, val_data = get_data_raw(cfg)
     json.dump(cfg, open("config.json", "w"))
     model = get_model(cfg)
@@ -36,10 +37,12 @@ def train(cfg, learning_rate, max_iters, eval_interval):
             torch.save(model, f"models/gpt_trained_{iter}.pth")
         xb, yb = get_batch(train_data, cfg["block_size"], cfg["batch_size"])
         logits, loss = model(xb, yb)
+        wandb.log({"Train Loss": loss, "iter": iter})
         if iter % eval_interval == 0:
             with torch.no_grad():
                 xb_val, yb_val = get_batch(val_data, cfg["block_size"], cfg["batch_size"])
                 logits_val, loss_val = model(xb_val, yb_val)
+                wandb.log({"Val Loss": loss_val, "iter": iter})
                 print(f"Training Loss: {loss} at iter {iter}")
                 print(f"Validation Loss: {loss_val} at iter {iter}")
         optimizer.zero_grad(set_to_none=True)
