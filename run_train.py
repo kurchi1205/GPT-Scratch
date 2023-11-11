@@ -6,11 +6,11 @@ if __name__ == "__main__":
         "vocab_size": None,
         "stoi": None,
         "embedding_dim": 384,
-        "block_size": 256,
-        "d_model": 384,
-        "num_heads": 6,
-        "num_layers": 4,
+        "block_size": 500,
+        "d_model": 512,
+        "num_heads": 8,
+        "num_layers": 6,
         "batch_size": 32,
         "save_interval": 1000
     }
-    train(config, learning_rate=0.0001, max_iters=10000, eval_interval=1000)
+    train(config, learning_rate=0.0001, max_iters=30000, eval_interval=1000)
