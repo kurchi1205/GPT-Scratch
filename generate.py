@@ -1,6 +1,7 @@
 import torch.nn.functional as F
 import torch
 import json
+import time
 
 def generate(model, block_size, itos, idx, max_new_tokens):
     # idx is (B, T) array of indices in the current context
@@ -24,13 +25,17 @@ def generate(model, block_size, itos, idx, max_new_tokens):
     return decoded_tokens
 
 if __name__ == "__main__":
-    model = torch.load("models/gpt_trained_12000.pth")
+    model = torch.load("models/gpt_trained_16000.pth")
     config = json.load(open("config.json"))
     stoi = config["stoi"]
-    text =  "Generate Docker File Code: FROM python:3"
+    text =  "abc"
     encode = lambda s: [stoi[c] for c in s]
     encoded_text = torch.tensor(([encode(text)]), dtype=torch.long)
     model = model.to('cpu')
     encoded_text = encoded_text.to('cpu')
-    generated_text = generate(model, config["block_size"], config["itos"], encoded_text, 500)
+    st_time = time.time()
+    generated_text = generate(model, config["block_size"], config["itos"], encoded_text, 1000)
+    et_time = time.time()
+    print("Time taken: ", et_time-st_time)
+    print("***************************************************")
     print(generated_text)

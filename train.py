@@ -3,9 +3,12 @@ from gpt import GPTModel
 from tqdm import tqdm
 import json
 import os
+import wandb
 from data import get_data, get_batch
+from accelerate import Accelerator
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+accelerator = Accelerator()
+DEVICE = accelerator.device
 
 def get_model(cfg):
     model = GPTModel(cfg["vocab_size"], cfg["embedding_dim"], cfg["block_size"], cfg["d_model"], cfg["num_heads"], cfg["num_layers"])
@@ -29,6 +32,10 @@ def train(cfg, learning_rate, max_iters, eval_interval):
     model = get_model(cfg)
     model = model.to(DEVICE)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    model, optimizer = accelerator.prepare(
+        model, optimizer
+    )
+    
     if not os.path.exists("models"):
         os.makedirs("models")
 
@@ -46,7 +53,7 @@ def train(cfg, learning_rate, max_iters, eval_interval):
                 print(f"Training Loss: {loss} at iter {iter}")
                 print(f"Validation Loss: {loss_val} at iter {iter}")
         optimizer.zero_grad(set_to_none=True)
-        loss.backward()
+        accelerator.backward(loss)
         optimizer.step()
     torch.save(model, f"models/gpt_trained.pth")
 

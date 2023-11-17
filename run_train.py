@@ -10,7 +10,7 @@ if __name__ == "__main__":
         "d_model": 512,
         "num_heads": 8,
         "num_layers": 6,
-        "batch_size": 32,
+        "batch_size": 64,
         "save_interval": 1000
     }
-    train(config, learning_rate=0.0001, max_iters=30000, eval_interval=1000)
+    train(config, learning_rate=0.0001, max_iters=20000, eval_interval=1000)
