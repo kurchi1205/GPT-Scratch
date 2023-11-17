@@ -1,0 +1,1 @@
+accelerate launch --config_file single_gpu_training.yaml run_train.py
