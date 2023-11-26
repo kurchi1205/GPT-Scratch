@@ -1,6 +1,9 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
+from einops import rearrange
+
+BLOCK_SIZE = 500
 
 class FeedFoward(nn.Module):
     def __init__(self, embedding_dim):
@@ -16,7 +19,54 @@ class FeedFoward(nn.Module):
         x = self.fc2(x)
         x = self.dropout(x)
         return x
-    
+
+
+class flash_atten(torch.autograd.Function):
+    @staticmethod
+    def forward(Q, K, V, mask): 
+        BC = BLOCK_SIZE
+        BR = min(BLOCK_SIZE, Q.shape[-1])
+        O = torch.zeros_like(Q, requires_grad=True).to(Q.device)
+        l = torch.zeros(Q.shape[:-1])[...,None]
+        m = torch.ones(Q.shape[:-1])[...,None] * -1e4
+        l = l.to(Q.device)
+        m = m.to(Q.device)
+        Q_BLOCKS = torch.split(Q, BR, dim=1)
+        K_BLOCKS = torch.split(K, BC, dim=1)
+        V_BLOCKS = torch.split(V, BC, dim=1)
+        O_BLOCKS = list(torch.split(O, BR, dim=1))
+        l_blocks = list(torch.split(l, BR, dim=1))
+        m_blocks = list(torch.split(m, BR, dim=1))
+
+        mask_BLOCKS = list(torch.split(mask, BC, dim=1))
+        for j in range(len(K_BLOCKS)):
+            kj = K_BLOCKS[j]
+            vj = V_BLOCKS[j]
+            maskj = mask_BLOCKS[j]
+            maskij = list(torch.split(maskj, BR, dim=0))
+            for i in range(len(Q_BLOCKS)):
+                qi = Q_BLOCKS[i]
+                oi = O_BLOCKS[i]
+                li = l_blocks[i]
+                mi = m_blocks[i]
+                mask_fill = maskij[i] 
+                qi_scaled = qi / Q.shape[-1]**-0.5
+                sij = qi_scaled @ kj.transpose(-2, -1)
+                maskij_temp = torch.unsqueeze(mask_fill, dim=0)
+                sij = sij.masked_fill(maskij_temp==0, float('-inf'))
+                mij, _ = torch.max(sij, -1, keepdim=True)
+                pij = torch.exp(sij - mij)
+                lij = torch.sum(pij, -1, keepdim=True)
+                mi_new = torch.maximum(mi, mij)
+                li_new = torch.exp(mi - mi_new) * li + torch.exp(mij - mi_new) * lij
+                expr = li * torch.exp(mi - mi_new) * oi / li_new
+                O_BLOCKS[i] = (li * torch.exp(mi - mi_new) * oi / li_new) +  (torch.exp(mij - mi_new) * pij / li_new) @ vj
+                l_blocks[i] = li_new
+                m_blocks[i] = mi_new
+        O = torch.cat(O_BLOCKS, dim=1)
+        return O
+
+
 class Head(nn.Module):
     def __init__(self, embedding_dim, head_size):
         super().__init__()
@@ -25,16 +75,21 @@ class Head(nn.Module):
         self.value = nn.Linear(embedding_dim, head_size)
         self.dropout = nn.Dropout(0.1)
 
-    def forward(self, x):
+    def forward(self, x, use_flash_attention=False):
         query = self.query(x)
         key = self.key(x)
-        weights = query @ key.transpose(-2,-1) * key.shape[-1]**-0.5
-        mask = torch.tril(torch.ones(x.size(1), x.size(1))).to(weights.device)
-        weights = weights.masked_fill(mask==0, float('-inf'))
-        weights = F.softmax(weights, dim=-1)
-        weights = self.dropout(weights)
         value = self.value(x)
-        weights = weights @ value
+        mask = torch.tril(torch.ones(x.size(1), x.size(1))).to(query.device)
+
+        if not use_flash_attention:
+            weights = query @ key.transpose(-2,-1) * key.shape[-1]**-0.5
+            weights = weights.masked_fill(mask==0, float('-inf'))
+            weights = F.softmax(weights, dim=-1)
+            weights = self.dropout(weights)
+            weights = weights @ value
+            return weights
+
+        weights = flash_atten.forward(query, key, value, mask)
         return weights
 
 
@@ -47,7 +102,7 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(0.2)
 
     def forward(self, x):
-        heads = torch.cat([head(x) for head in self.heads], dim=-1)
+        heads = torch.cat([head(x, True) for head in self.heads], dim=-1)
         projection = self.proj(heads)
         projection = self.dropout(projection)
         return projection
