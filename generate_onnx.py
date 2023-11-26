@@ -42,10 +42,10 @@ def generate(ort_session, block_size, itos, idx, max_new_tokens):
     return decoded_tokens
 
 if __name__ == "__main__":
-    ort_session = ort.InferenceSession("./torch_model.onnx", providers=['CPUExecutionProvider'])
+    ort_session = ort.InferenceSession("./model_quantized.onnx", providers=['CPUExecutionProvider'])
     config = json.load(open("config.json"))
     stoi = config["stoi"]
-    text =  "abc"
+    text =  "G"
     encode = lambda s: [stoi[c] for c in s]
     encoded_text = [encode(text)]
     encoded_text = np.array(encoded_text, dtype=np.int64)
