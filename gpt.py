@@ -164,8 +164,8 @@ class MultiHeadAttention(nn.Module):
         self.proj = nn.Linear(d_model, embedding_dim)
         self.dropout = nn.Dropout(0.2)
 
-    def forward(self, x):
-        heads = torch.cat([head(x, False) for head in self.heads], dim=-1)
+    def forward(self, x, use_flash_attention=False):
+        heads = torch.cat([head(x, use_flash_attention) for head in self.heads], dim=-1)
         projection = self.proj(heads)
         projection = self.dropout(projection)
         return projection
@@ -178,8 +178,8 @@ class Block(nn.Module):
         self.ff = FeedFoward(embedding_dim) 
         self.sa = MultiHeadAttention(embedding_dim, num_heads, d_model)
 
-    def forward(self, x):
-        x = x + self.sa(self.ln1(x))
+    def forward(self, x, use_flash_attention=False):
+        x = x + self.sa(self.ln1(x), use_flash_attention)
         x = x + self.ff(self.ln2(x))
         return x
 
@@ -201,11 +201,11 @@ class GPTModel(nn.Module):
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    def forward(self, x, targets=None):
+    def forward(self, x, use_flash_attention=False, targets=None):
         x = self.embedding(x)
         pos = torch.arange(x.size(1), device=x.device)
         x = x + self.pos_embedding(pos)
-        x = self.blocks(x)
+        x = self.blocks(x, use_flash_attention)
         x = self.layer_norm(x)
         logits = self.lm_head(x)
         if targets is None:
