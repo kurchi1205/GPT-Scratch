@@ -1,0 +1,4 @@
+torch==2.0.0
+accelerate==0.24.1
+numpy
+wandb
