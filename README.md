@@ -8,11 +8,11 @@ https://huggingface.co/spaces/prerana1205/GPT-Inference
 
 ### Speedup in inference
 
-| Inference Type        | Time Taken           |
+| Inference Type        | Time Taken for 1000 tokens          |
 | ------------- |:-------------:|
-| Pytorch Model     | 83secs |
-| Quantized Model     | 81secs      |
-| Onnx Quantized | 56secs      |
+| Pytorch Model     | 83 secs |
+| Quantized Model     | 81 secs      |
+| Onnx Quantized | 56 secs      |
 
 
 ## Run Training On GPU
@@ -54,6 +54,9 @@ This will export the model to onnx and quantize it.
     python generate_onnx.py #for onnx model
 ```
 
+## Acknowledgements
+
+ - [Andrej Karpathy lecture](https://github.com/karpathy/ng-video-lecture/tree/master)
 
 
 
