@@ -4,7 +4,7 @@
 In this projects I have implemented training flow for GPT for single GPU using Huggingface Accelerate. Then I have exported the model to ONNX format for faster inference. Post that I have deployed it to Huggingface Spaces. Training logs can be seen from Wandb
 
 ### Huggingface Spaces Link
-
+https://huggingface.co/spaces/prerana1205/GPT-Inference
 
 ### Speedup in inference
 
